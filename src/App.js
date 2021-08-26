@@ -8,8 +8,12 @@ import {
 import { Home, Users } from "./pages";
 import { Nav, Footer, Theme } from "./layout";
 import { MuiThemeProvider } from "@material-ui/core/styles";
+import Api from "./api";
+
 
 function App() {
+  const api = new Api(process.env.REACT_APP_BASE_URL);
+
   return (
     <MuiThemeProvider theme={Theme}>
       <div className="flex flex-col min-h-screen">
@@ -17,10 +21,10 @@ function App() {
           <Nav />
           <Switch>
             <Route exact path="/">
-              <Home />
+              <Home api={api} />
             </Route>
             <Route path="/users">
-              <Users />
+              <Users api={api} />
             </Route>
           </Switch>
 
