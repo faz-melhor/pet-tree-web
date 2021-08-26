@@ -5,13 +5,13 @@ import Tree from "./Tree.js";
 
 function TreesList(props) {
 
-  const trees = props.trees;
+  const { trees } = props;
   const treesLen = trees.length;
 
   return (
     trees.map((tree, i) => (
       <React.Fragment key={tree.id}>
-        <Tree tree={tree} changeTree={props.changeTree} />
+        <Tree tree={tree} />
         {treesLen !== i + 1 ? <Divider /> : null}
       </React.Fragment>
     ))

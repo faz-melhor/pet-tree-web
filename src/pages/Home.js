@@ -1,65 +1,100 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useReducer, useCallback } from "react";
 import { Layout } from "../layout";
 import { Paper, Tabs, Tab } from "@material-ui/core";
-import { trees } from "../mock/trees";
 import { TreesList, TreeInfo } from "../components";
+import { Alert, AlertTitle } from "@material-ui/lab";
+import { HomeReducer as reducer } from "../reducers";
+import { HomeContext } from "../contexts";
+import CircularProgress from "@material-ui/core/CircularProgress";
 
-function Home() {
-  const [status, setStatusFilter] = useState({ treeStatus: "pending", trees: [] });
+function Home({ api }) {
+
+  const defaultState = {
+    trees: [],
+    filter: "pending",
+    tree: undefined,
+    showAlert: false,
+    alertSeverity: "error",
+    alertMessage: "",
+    alertTitle: "Error",
+    isLoading: false
+  }
+
+  const [state, dispatch] = useReducer(reducer, defaultState);
+
+  const loadTreesList = useCallback(async () => {
+    dispatch({ type: 'LOADING' })
+    const [ok, result] = await api.Trees.getAll({ status: state.filter });
+    dispatch({ type: 'READY' })
+
+    if (ok) {
+      dispatch({ type: 'LOAD_TREES', payload: result });
+    } else {
+      handleErrorMessage(result);
+    }
+  }, [state.filter, api.Trees]);
 
   useEffect(() => {
-    let newTrees = trees.filter(tree => tree.status === "pending");
-    setStatusFilter({ treeStatus: status.treeStatus, trees: newTrees });
-  }, [])
+    loadTreesList();
+  }, [state.filter, loadTreesList]);
 
-  const handleStatusFilterChange = (_, newStatus) => {
+  function handleErrorMessage(message) {
+    dispatch({ type: 'SHOW_ERROR', payload: message });
 
-    let newTrees = [];
+    const timer = setTimeout(() => {
+      dispatch({ type: "HIDE_ALERT" });
+    }, 5000);
 
-    if (newStatus === "approved") {
-      newTrees = trees.filter(tree => tree.status === "approved");
-      setTree(undefined);
-    } else if (newStatus === "rejected") {
-      newTrees = trees.filter(tree => tree.status === "rejected");
-      setTree(undefined);
-    } else {
-      newTrees = trees.filter(tree => tree.status === "pending");
-      setTree(undefined);
-    }
+    return () => clearTimeout(timer);
+  }
 
-    setStatusFilter({ treeStatus: newStatus, trees: newTrees });
-  };
-
-  const [tree, setTree] = useState(undefined);
+  function handleStatusFilterChange(_, newFilter) {
+    dispatch({ type: 'CHANGE_FILTER', payload: newFilter });
+  }
 
   function handleTreeInfoChange(newTree) {
-    setTree(newTree);
+    dispatch({ type: 'CHANGE_TREE', payload: newTree });
   };
+
+  async function changeStatus(treeId, newStatus) {
+    let [ok, result] = await api.Trees.updateTreeStatus(treeId, newStatus);
+
+    if (ok) {
+      loadTreesList();
+    } else {
+      handleErrorMessage(result);
+    }
+  }
 
   return (
     <Layout>
-
-      <Paper elevation={3} className="w-full m-2 mb-1 max-w-min mx-auto">
-        <Tabs
-          value={status.treeStatus}
-          indicatorColor="primary"
-          textColor="primary"
-          onChange={handleStatusFilterChange}
-        >
-          <Tab label="pending" value="pending" />
-          <Tab label="approved" value="approved" />
-          <Tab label="rejected" value="rejected" />
-        </Tabs>
-      </Paper>
-
-      <div className="flex flex-row h-5/6">
-        <Paper variant="outlined" className="space-y-5 flex flex-col m-5 p-5 my-1 bg-white w-1/2">
-          <TreesList trees={status.trees} changeTree={handleTreeInfoChange} />
+      <HomeContext.Provider value={{ handleTreeInfoChange: handleTreeInfoChange, changeStatus: changeStatus, tab: state.filter }}>
+        <Paper elevation={3} className="w-full m-2 mb-1 max-w-min mx-auto">
+          <Tabs
+            value={state.filter}
+            indicatorColor="primary"
+            textColor="primary"
+            onChange={handleStatusFilterChange}
+          >
+            <Tab label="pending" value="pending" />
+            <Tab label="accepted" value="accepted" />
+            <Tab label="rejected" value="rejected" />
+          </Tabs>
         </Paper>
-        <Paper variant="outlined" className="m-5 p-5 my-1 bg-white w-1/2">
-          <TreeInfo tree={tree} />
-        </Paper>
-      </div>
+
+        <div className="flex flex-row h-5/6">
+          <Paper elevation={2} variant="outlined" className="space-y-5 flex flex-col m-5 p-5 my-1 bg-white w-1/2">
+           {state.isLoading ? <CircularProgress className="m-auto"/> : <TreesList trees={state.trees} />}
+          </Paper>
+          <Paper elevation={2} variant="outlined" className="m-5 p-5 my-1 bg-white w-1/2">
+            <TreeInfo tree={state.tree} />
+          </Paper>
+        </div>
+        {state.showAlert && <Alert variant="filled" severity={state.alertSeverity}>
+          <AlertTitle>{state.alertTitle}</AlertTitle>
+          <strong>{state.alertMessage}</strong>
+        </Alert>}
+      </HomeContext.Provider>
     </Layout>
   );
 }

@@ -1,12 +1,45 @@
-import React from "react";
+import React, { useContext } from "react";
 import Button from "@material-ui/core/Button";
+import { HomeContext } from "../contexts";
 
 function Tree(props) {
 
-  const { description, owner } = props.tree
+  const { tree } = props
+  const { handleTreeInfoChange, changeStatus, tab } = useContext(HomeContext);
+  const { description, owner, id } = tree
 
-  const handleChange = (newTree) => {
-    props.changeTree(newTree);
+  function handleChange(newTree) {
+    handleTreeInfoChange(newTree);
+  }
+
+  function handleUpdate(treeId, newStatus) {
+    changeStatus(treeId, newStatus);
+  }
+
+  function renderButtons(tab) {
+
+    if (tab === "pending") {
+      return (
+        <React.Fragment>
+          <Button variant="text" onClick={() => handleUpdate(id, "rejected")} color="secondary">Reject</Button>
+          <Button variant="contained" onClick={() => handleUpdate(id, "accepted")} color="primary">Accept</Button>
+        </React.Fragment>
+      );
+    } else if (tab === "accepted") {
+      return (
+        <React.Fragment>
+          <Button variant="text" onClick={() => handleUpdate(id, "rejected")} color="secondary">Reject</Button>
+          <Button variant="contained" onClick={() => handleUpdate(id, "pending")} color="primary">Move to Pending</Button>
+        </React.Fragment>
+      );
+    } else {
+      return (
+        <React.Fragment>
+          <Button variant="text" onClick={() => handleUpdate(id, "pending")} color="secondary">Move to Pending</Button>
+          <Button variant="contained" onClick={() => handleUpdate(id, "accepted")} color="primary">Accept</Button>
+        </React.Fragment>
+      );
+    }
   }
 
   return (
@@ -16,9 +49,8 @@ function Tree(props) {
         <h1>Plantado por {owner.nickname}</h1>
       </div>
       <div className="space-x-4 float-right align-bottom">
-        <Button variant="text" onClick={() => handleChange(props.tree)}>Details</Button>
-        <Button variant="text" color="secondary">Reject</Button>
-        <Button variant="contained" color="primary">Approve</Button>
+        <Button variant="text" onClick={() => handleChange(tree)}>Details</Button>
+        {renderButtons(tab)}
       </div>
     </article>
   );
