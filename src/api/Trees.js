@@ -9,10 +9,14 @@ class Trees {
 
       return [true, response.data.trees];
     } catch (error) {
-      const { status, statusText, data } = error.response;
-      const message = String(status) + " " + statusText + ": " + data.errors.detail;
+      if (error.response) {
+        const { status, statusText, data } = error.response;
+        const message = String(status) + " " + statusText + ": " + data.errors.detail;
 
-      return [false, message];
+        return [false, message];
+      }
+
+      return [false, "Servers Offline. Please try again later."];
     }
   }
 
@@ -23,10 +27,14 @@ class Trees {
 
       return [true, ""];
     } catch (error) {
-      const { status, statusText, data } = error.response;
-      const message = String(status) + " " + statusText + ": " + data.errors.detail;
+      if (error.response) {
+        const { status, statusText, data } = error.response;
+        const message = String(status) + " " + statusText + ": " + data.errors.detail;
 
-      return [false, message];
+        return [false, message];
+      }
+
+      return [false, "Servers Offline. Please try again later."];
     }
   }
 }
