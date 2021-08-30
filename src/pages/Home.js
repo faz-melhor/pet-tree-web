@@ -1,4 +1,5 @@
 import React, { useEffect, useReducer, useCallback } from "react";
+import { useHistory } from "react-router-dom";
 import { Layout } from "../layout";
 import { Paper, Tabs, Tab } from "@material-ui/core";
 import { TreesList, TreeInfo } from "../components";
@@ -9,6 +10,7 @@ import CircularProgress from "@material-ui/core/CircularProgress";
 
 function Home({ api }) {
 
+  const history = useHistory();
   const defaultState = {
     trees: [],
     filter: "pending",
@@ -24,15 +26,20 @@ function Home({ api }) {
 
   const loadTreesList = useCallback(async () => {
     dispatch({ type: 'LOADING' })
-    const [ok, result] = await api.Trees.getAll({ status: state.filter });
+    const [ok, result, status] = await api.Trees.getAll({ status: state.filter });
     dispatch({ type: 'READY' })
 
     if (ok) {
       dispatch({ type: 'LOAD_TREES', payload: result });
     } else {
       handleErrorMessage(result);
+
+      if (status === 401 || status === 403) {
+        api.Auth.signout();
+        history.push('/signin');
+      }
     }
-  }, [state.filter, api.Trees]);
+  }, [state.filter, api.Trees, api.Auth, history]);
 
   useEffect(() => {
     loadTreesList();
@@ -57,12 +64,17 @@ function Home({ api }) {
   };
 
   async function changeStatus(treeId, newStatus) {
-    let [ok, result] = await api.Trees.updateTreeStatus(treeId, newStatus);
+    let [ok, result, status] = await api.Trees.updateTreeStatus(treeId, newStatus);
 
     if (ok) {
       loadTreesList();
     } else {
       handleErrorMessage(result);
+
+      if (status === 401 || status === 403) {
+        api.Auth.signout();
+        history.push('/signin');
+      }
     }
   }
 
@@ -84,7 +96,7 @@ function Home({ api }) {
 
         <div className="flex flex-row h-5/6">
           <Paper elevation={2} variant="outlined" className="space-y-5 flex flex-col m-5 p-5 my-1 bg-white w-1/2">
-           {state.isLoading ? <CircularProgress className="m-auto"/> : <TreesList trees={state.trees} />}
+            {state.isLoading ? <CircularProgress className="m-auto" /> : <TreesList trees={state.trees} />}
           </Paper>
           <Paper elevation={2} variant="outlined" className="m-5 p-5 my-1 bg-white w-1/2">
             <TreeInfo tree={state.tree} />
