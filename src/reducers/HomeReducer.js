@@ -1,33 +1,40 @@
 const HomeReducer = (state, action) => {
-  if (action.type === 'LOAD_TREES') {
-    return { ...state, trees: action.payload, tree: undefined }
-  }
+  switch (action.type) {
+    case 'LOAD_TREES': {
+      return { ...state, trees: action.payload, tree: undefined }
+    }
 
-  if (action.type === 'CHANGE_FILTER') {
-    return { ...state, filter: action.payload }
-  }
+    case 'CHANGE_FILTER': {
+      return { ...state, filter: action.payload }
+    }
 
-  if (action.type === 'CHANGE_TREE') {
-    return { ...state, tree: action.payload }
-  }
+    case 'CHANGE_TREE': {
+      return { ...state, tree: action.payload }
+    }
 
-  if (action.type === 'SHOW_ERROR') {
-    return { ...state, showAlert: true, alertMessage: action.payload }
-  }
+    case 'SHOW_ERROR': {
+      return { ...state, showAlert: true, alertMessage: action.payload }
+    }
 
-  if (action.type === 'HIDE_ALERT') {
-    return { ...state, showAlert: false }
-  }
+    case 'SHOW_INFO': {
+      return { ...state, alertSeverity: "info", alertTitle: "Info", showAlert: true, alertMessage: action.payload }
+    }
 
-  if (action.type === 'LOADING') {
-    return { ...state, isLoading: true }
-  }
+    case 'HIDE_ALERT': {
+      return { ...state, showAlert: false }
+    }
 
-  if (action.type === 'READY') {
-    return { ...state, isLoading: false }
-  }
+    case 'LOADING': {
+      return { ...state, isLoading: true }
+    }
 
-  throw new Error('no matching action type');
+    case 'READY': {
+      return { ...state, isLoading: false }
+    }
+
+    default:
+      throw new Error('no matching action type');
+  }
 };
 
 export default HomeReducer;
