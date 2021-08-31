@@ -6,17 +6,18 @@ class Users {
   async getAll(params = {}) {
     try {
       const response = await this.api.instance.get('/users', { params: params });
+      const total = parseInt(response.headers["x-total-count"]);
 
-      return [true, response.data.users, response.status];
+      return { ok: true, users: response.data.users, status: response.status, total: total };
     } catch (error) {
       if (error.response) {
         const { status, statusText, data } = error.response;
         const message = String(status) + " " + statusText + ": " + data.errors.detail;
 
-        return [false, message, status];
+        return { ok: false, message: message, status: status }
       }
 
-      return [false, "Servers Offline. Please try again later."];
+      return { ok: false, message: "Servers Offline. Please try again later." };
     }
   }
 
@@ -25,16 +26,16 @@ class Users {
       const url = '/users/' + String(userId);
       await this.api.instance.patch(url, { roles: roles });
 
-      return [true, ""];
+      return { ok: true };
     } catch (error) {
       if (error.response) {
         const { status, statusText, data } = error.response;
         const message = String(status) + " " + statusText + ": " + data.errors.detail;
 
-        return [false, message];
+        return { ok: false, message: message, status: status };
       }
 
-      return [false, "Servers Offline. Please try again later."];
+      return { ok: false, message: "Servers Offline. Please try again later." };
     }
   }
 }

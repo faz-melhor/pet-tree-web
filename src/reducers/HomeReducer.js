@@ -1,7 +1,7 @@
 const HomeReducer = (state, action) => {
   switch (action.type) {
     case 'LOAD_TREES': {
-      return { ...state, trees: action.payload, tree: undefined }
+      return { ...state, trees: action.payload, tree: undefined, totalPages: Math.ceil(action.total_trees / state.pageSize) }
     }
 
     case 'CHANGE_FILTER': {
@@ -30,6 +30,10 @@ const HomeReducer = (state, action) => {
 
     case 'READY': {
       return { ...state, isLoading: false }
+    }
+
+    case 'PAGE_CHANGE': {
+      return { ...state, page: action.payload }
     }
 
     default:

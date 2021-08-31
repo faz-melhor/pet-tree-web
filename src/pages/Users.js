@@ -1,18 +1,9 @@
 import React, { useEffect, useReducer, useCallback } from "react";
 import { useHistory } from "react-router-dom";
+import { Paper, CircularProgress, ListItemText, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button } from "@material-ui/core";
+import { Alert, AlertTitle, Pagination } from "@material-ui/lab";
 import { Layout } from "../layout";
-import { Paper } from "@material-ui/core";
-import { Alert, AlertTitle } from "@material-ui/lab";
 import { UserReducer as reducer } from "../reducers";
-import CircularProgress from "@material-ui/core/CircularProgress";
-import ListItemText from '@material-ui/core/ListItemText';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import Button from "@material-ui/core/Button";
 
 function Users({ api }) {
   const history = useHistory();
@@ -22,27 +13,30 @@ function Users({ api }) {
     alertSeverity: "error",
     alertMessage: "",
     alertTitle: "Error",
-    isLoading: false
+    isLoading: false,
+    page: 1,
+    pageSize: 7,
+    totalPages: 0
   }
 
   const [state, dispatch] = useReducer(reducer, defaultState);
 
   const loadUsersList = useCallback(async () => {
     dispatch({ type: 'LOADING' })
-    const [ok, result, status] = await api.Users.getAll();
+    const result = await api.Users.getAll({ offset: ((state.page - 1) * state.pageSize), limit: state.pageSize });
     dispatch({ type: 'READY' })
 
-    if (ok) {
-      dispatch({ type: 'LOAD_USERS', payload: result });
+    if (result.ok) {
+      dispatch({ type: 'LOAD_USERS', payload: result.users, total_users: result.total });
     } else {
-      handleAlert(result, "error");
+      handleAlert(result.message, "error");
 
-      if (status === 401 || status === 403) {
+      if (result.status === 401 || result.status === 403) {
         api.Auth.signout();
         history.push('/signin');
       }
     }
-  }, [api.Users, api.Auth, history]);
+  }, [api.Users, api.Auth, history, state.page, state.pageSize]);
 
   function handleAlert(message, type) {
     if (type === "error") {
@@ -63,19 +57,23 @@ function Users({ api }) {
   }, [loadUsersList]);
 
   async function handleUserRoleChange(userId, roles) {
-    const [ok, result, status] = await api.Users.updateUserRoles(userId, roles);
+    const result = await api.Users.updateUserRoles(userId, roles);
 
-    if (ok) {
+    if (result.ok) {
       handleAlert("Roles successfully changed!", "info");
       loadUsersList();
     } else {
-      handleAlert(result, "error", status);
+      handleAlert(result.message, "error");
 
-      if (status === 401 || status === 403) {
+      if (result.status === 401 || result.status === 403) {
         api.Auth.signout();
         history.push('/signin');
       }
     }
+  }
+
+  function handlePageChange(e, value) {
+    dispatch({ type: 'PAGE_CHANGE', payload: value });
   }
 
   function renderActionButtons(userId, isAdmin) {
@@ -108,7 +106,7 @@ function Users({ api }) {
   function UsersList({ users }) {
 
     return (
-      <TableContainer component={Paper}>
+      <TableContainer elevation={0} component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
@@ -130,11 +128,12 @@ function Users({ api }) {
 
   return (
     <Layout>
-      <div className="flex justify-center h-5/6">
-        <Paper variant="outlined" className="flex bg-white w-1/2">
+      <div style={{ minHeight: "90%" }} className="flex justify-center h-auto">
+        <Paper elevation={3} className="flex bg-white w-1/2 m-5 p-5">
           {state.isLoading ? <CircularProgress className="m-auto" /> : <UsersList users={state.users} />}
         </Paper>
       </div>
+      {state.totalPages > 1 ? <Pagination className="flex justify-center" count={state.totalPages} color="primary" onChange={(e, value) => handlePageChange(e, value)} /> : null}
       {state.showAlert && <Alert variant="filled" severity={state.alertSeverity}>
         <AlertTitle>{state.alertTitle}</AlertTitle>
         <strong>{state.alertMessage}</strong>
