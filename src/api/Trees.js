@@ -6,17 +6,18 @@ class Trees {
   async getAll(params = {}) {
     try {
       const response = await this.api.instance.get('/trees', { params: params });
+      const total = parseInt(response.headers["x-total-count"]);
 
-      return [true, response.data.trees, response.status];
+      return { ok: true, trees: response.data.trees, status: response.status, total: total };
     } catch (error) {
       if (error.response) {
         const { status, statusText, data } = error.response;
         const message = String(status) + " " + statusText + ": " + data.errors.detail;
 
-        return [false, message, status];
+        return { ok: false, message: message, status: status }
       }
 
-      return [false, "Servers Offline. Please try again later."];
+      return { ok: false, message: "Servers Offline. Please try again later." };
     }
   }
 
@@ -25,16 +26,16 @@ class Trees {
       const url = '/trees/' + String(treeId);
       await this.api.instance.patch(url, { status: status });
 
-      return [true, "", status];
+      return { ok: true };
     } catch (error) {
       if (error.response) {
         const { status, statusText, data } = error.response;
         const message = String(status) + " " + statusText + ": " + data.errors.detail;
 
-        return [false, message, status];
+        return { ok: false, message: message, status: status };
       }
 
-      return [false, "Servers Offline. Please try again later."];
+      return { ok: false, message: "Servers Offline. Please try again later." };
     }
   }
 }

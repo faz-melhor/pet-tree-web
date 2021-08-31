@@ -1,12 +1,11 @@
 import React, { useEffect, useReducer, useCallback } from "react";
 import { useHistory } from "react-router-dom";
+import { Paper, Tabs, Tab, CircularProgress, Grid } from "@material-ui/core";
+import { Alert, AlertTitle, Pagination } from "@material-ui/lab";
 import { Layout } from "../layout";
-import { Paper, Tabs, Tab } from "@material-ui/core";
 import { TreesList, TreeInfo } from "../components";
-import { Alert, AlertTitle } from "@material-ui/lab";
 import { HomeReducer as reducer } from "../reducers";
 import { HomeContext } from "../contexts";
-import CircularProgress from "@material-ui/core/CircularProgress";
 
 function Home({ api }) {
 
@@ -19,27 +18,30 @@ function Home({ api }) {
     alertSeverity: "error",
     alertMessage: "",
     alertTitle: "Error",
-    isLoading: false
+    isLoading: false,
+    page: 1,
+    pageSize: 7,
+    totalPages: 0
   }
 
   const [state, dispatch] = useReducer(reducer, defaultState);
 
   const loadTreesList = useCallback(async () => {
     dispatch({ type: 'LOADING' })
-    const [ok, result, status] = await api.Trees.getAll({ status: state.filter });
+    const result = await api.Trees.getAll({ status: state.filter, offset: ((state.page - 1) * state.pageSize), limit: state.pageSize });
     dispatch({ type: 'READY' })
 
-    if (ok) {
-      dispatch({ type: 'LOAD_TREES', payload: result });
+    if (result.ok) {
+      dispatch({ type: 'LOAD_TREES', payload: result.trees, total_trees: result.total });
     } else {
-      handleErrorMessage(result);
+      handleErrorMessage(result.message);
 
-      if (status === 401 || status === 403) {
+      if (result.status === 401 || result.status === 403) {
         api.Auth.signout();
         history.push('/signin');
       }
     }
-  }, [state.filter, api.Trees, api.Auth, history]);
+  }, [state.filter, api.Trees, api.Auth, history, state.page, state.pageSize]);
 
   useEffect(() => {
     loadTreesList();
@@ -64,18 +66,22 @@ function Home({ api }) {
   };
 
   async function changeStatus(treeId, newStatus) {
-    let [ok, result, status] = await api.Trees.updateTreeStatus(treeId, newStatus);
+    const result = await api.Trees.updateTreeStatus(treeId, newStatus);
 
-    if (ok) {
+    if (result.ok) {
       loadTreesList();
     } else {
-      handleErrorMessage(result);
+      handleErrorMessage(result.message);
 
-      if (status === 401 || status === 403) {
+      if (result.status === 401 || result.status === 403) {
         api.Auth.signout();
         history.push('/signin');
       }
     }
+  }
+
+  function handlePageChange(e, value) {
+    dispatch({ type: 'PAGE_CHANGE', payload: value });
   }
 
   return (
@@ -94,14 +100,15 @@ function Home({ api }) {
           </Tabs>
         </Paper>
 
-        <div className="flex flex-row h-5/6">
-          <Paper elevation={2} variant="outlined" className="space-y-5 flex flex-col m-5 p-5 my-1 bg-white w-1/2">
+        <Grid container direction="row" justifyContent="center" alignItems="flex-start" className="flex flex-row h-5/6">
+          <Paper elevation={3} style={{ minHeight: "90%" }} className="h-auto space-y-5 flex flex-col m-5 p-5 my-1 w-5/12">
             {state.isLoading ? <CircularProgress className="m-auto" /> : <TreesList trees={state.trees} />}
           </Paper>
-          <Paper elevation={2} variant="outlined" className="m-5 p-5 my-1 bg-white w-1/2">
+          <Paper elevation={3} style={{ height: "90%" }} className="m-5 p-5 my-1 bg-white w-5/12">
             <TreeInfo tree={state.tree} />
           </Paper>
-        </div>
+        </Grid>
+        {state.totalPages > 1 ? <Pagination className="flex justify-center" count={state.totalPages} color="primary" onChange={(e, value) => handlePageChange(e, value)} /> : null}
         {state.showAlert && <Alert variant="filled" severity={state.alertSeverity}>
           <AlertTitle>{state.alertTitle}</AlertTitle>
           <strong>{state.alertMessage}</strong>

@@ -17,7 +17,7 @@ function TreeInfo(props) {
         <div className="w-1/2 flex flex-col justify-between m-1">
           <div>
             <b>{description}</b>
-            <h1>Plantado por {owner.nickname}</h1>
+            <h1>Tree planted by {owner.nickname}</h1>
           </div>
           <div>
             <b>Specie:</b>

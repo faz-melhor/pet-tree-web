@@ -1,7 +1,7 @@
 const UserReducer = (state, action) => {
   switch (action.type) {
     case 'LOAD_USERS': {
-      return { ...state, users: action.payload }
+      return { ...state, users: action.payload, totalPages: Math.ceil(action.total_users / state.pageSize) }
     }
 
     case 'SHOW_ERROR': {
@@ -22,6 +22,10 @@ const UserReducer = (state, action) => {
 
     case 'READY': {
       return { ...state, isLoading: false }
+    }
+
+    case 'PAGE_CHANGE': {
+      return { ...state, page: action.payload }
     }
 
     default:
